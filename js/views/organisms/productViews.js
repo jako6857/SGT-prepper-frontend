@@ -27,7 +27,13 @@ export const ProductListView = (products = [], category = "") => {
     // Clickable product card
     const contentDiv = Div("flex justify-between items-start gap-6 cursor-pointer mb-4");
     contentDiv.addEventListener("click", () => {
-      window.location.href = `./index.html?category=${encodeURIComponent(category)}&product=${encodeURIComponent(product.slug)}`;
+    // Reuse the current page and only change the query params
+    const url = new URL(window.location.href);
+    url.searchParams.set("category", category);
+    url.searchParams.set("product", product.slug);
+
+    // Navigate to the updated URL (productController reads these params)
+    window.location.href = url.toString();
     });
 
     const img = Image(resolveImageUrl(product.imageUrl), product.name || "Produktbillede", "max-w-[200px] rounded-lg object-cover shadow-md");
@@ -95,7 +101,7 @@ export const ProductsDetailsView = (product) => {
     return element;
   }
 
-  const productId = getNumericProductId(product.slug);
+  const productId = product.id;
 
   const imageCol = Div("md:w-[400px] shrink-0");
   const img = Image(resolveImageUrl(product.imageUrl), product.name || "Produktbillede", "w-full rounded-lg shadow-lg object-cover");
