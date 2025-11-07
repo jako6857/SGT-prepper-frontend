@@ -1,13 +1,14 @@
-import {request} from "../services/fetch.js";
+// src/models/productModel.js
+import { request } from "../services/fetch.js";
 
+// Fetch all products in a category
 export const getList = async (category) => {
-    const url = `http://localhost:4000/api/products/${category}`
-    const data = await request (url)
-    return data
-}
+  const url = `http://localhost:4000/api/products/${encodeURIComponent(category)}`;
+  return await request(url, "GET");
+};
 
-export const getDetails = async (product) => {
-    const url = `http://localhost:4000/api/products/byId/${product}`
-    const data = await request (url)
-    return data
-}
+// Fetch product details by slug
+export const getDetails = async (productSlug) => {
+  const url = `http://localhost:4000/api/products/details/${encodeURIComponent(productSlug)}`;
+  return await request(url, "GET");
+};

@@ -1,71 +1,56 @@
-import { addToCart } from "../models/cartModel.js";
-import { getList } from "../models/productModel.js";
-import { getDetails } from "../models/productModel.js";
+// src/controllers/productController.js
+import { getList, getDetails } from "../models/productModel.js";
 import { ProductListView, ProductsDetailsView } from "../views/organisms/productViews.js";
 import { Layout } from "./layoutController.js";
-import { request } from "../services/fetch.js";
 
-
-
-
+// Entry point
 export const productPage = async () => {
-    const params = Object.fromEntries(new URLSearchParams(location.search));
-    
-    // Check if we have both category and product
-    if (params.category && params.product) {
-        return ProductDetails(params.product);
-    }
-    
-    return ProductList();
-}
+  const url = new URL(window.location.href);
+  const category = url.searchParams.get("category") || "vand-og-vandrensning";
+  const productSlug = url.searchParams.get("product");
 
-export const ProductList = async () => {
-    const { category = 'vand-og-vandrensning' } = Object.fromEntries(new URLSearchParams(location.search));
-    const data = await getList(category);
-    const html = ProductListView(data, category);
+  console.log("Parsed params:", { category, productSlug });
+
+  if (productSlug) return ProductDetails(productSlug);
+  return ProductList(category);
+};
+
+// Load product list
+export const ProductList = async (category = "vand-og-vandrensning") => {
+  try {
+    const products = await getList(category);
+    const html = ProductListView(products, category);
     return Layout("Produkter", html);
-}
+  } catch (error) {
+    console.error("Error loading product list:", error);
+    const html = Div();
+    html.innerText = "Kunne ikke indlæse produkter.";
+    return Layout("Produkter", html);
+  }
+};
 
-export const ProductDetails = async (productId) => {
-    if (!productId) {
-        console.error('No product ID provided');
-        return ProductList();
+// Load product details
+export const ProductDetails = async (slug) => {
+  if (!slug) {
+    alert("Ugyldigt produkt");
+    return ProductList();
+  }
+
+  try {
+    const product = await getDetails(slug);
+
+    if (!product) {
+      alert("Produktet blev ikke fundet");
+      return ProductList();
     }
 
-    try {
-        const product = await getDetails(productId);
-        const html = ProductsDetailsView(product);
-        return Layout(product.name, html);
-    } catch (error) {
-        console.error('Error loading product details:', error);
-        return ProductList();
-    }
-}
-
-export const handleAddToCart = async (e) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    
-    // Get values and convert to integers
-    const productId = parseInt(form.querySelector('[name="productId"]').value);
-    const quantity = parseInt(form.querySelector('[name="quantity"]').value);
-
-    if (!productId || !quantity || quantity < 1) {
-        alert('Ugyldige værdier. Kontroller venligst antal.');
-        return;
-    }
-
-    try {
-        const result = await addToCart({
-            productId,
-            quantity
-        });
-
-        if (result) {
-            alert('Produkt tilføjet til kurv!');
-        }
-    } catch (error) {
-        console.error('Fejl ved tilføjelse til kurv:', error);
-        alert('Kunne ikke tilføje til kurv. Prøv igen senere.');
-    }
-}
+    const html = ProductsDetailsView(product);
+    return Layout(product.name || "Produkt", html);
+  } catch (error) {
+    console.error("Error loading product details:", error);
+    alert("Kunne ikke indlæse produktet. Viser produktliste.");
+    const url = new URL(window.location.href);
+    const category = url.searchParams.get("category") || "vand-og-vandrensning";
+    return ProductList(category);
+  }
+};
